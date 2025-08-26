@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1020">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/icon-192.png">
+  <title>Loud Librarian (Online)</title>
+  <style>
+    :root{--bg:#0b1020;--bg2:#121a2b;--panel:#0f162a;--accent:#6ee7ff;--accent2:#4de28d;--text:#eaf2ff;--danger:#ff6b6b}
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text);
+         font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial}
+    .container{max-width:960px;margin:0 auto;padding:16px}
+    .card{background:rgba(15,22,42,.9);border:1px solid rgba(110,231,255,.18);border-radius:18px;padding:16px;
+          box-shadow:0 10px 30px rgba(0,0,0,.35);backdrop-filter:blur(6px)}
+    h1{margin:0 0 10px;font-size:26px;letter-spacing:.3px;text-shadow:0 0 16px rgba(110,231,255,.25)}
+    .grid{display:grid;gap:12px}
+    @media(min-width:880px){.grid{grid-template-columns:1.2fr .8fr}}
+    input,select,button{padding:10px 12px;border-radius:12px;border:1px solid rgba(110,231,255,.25);background:#0e162b;
+                        color:var(--text)}
+    button{font-weight:700;cursor:pointer;box-shadow:0 8px 18px rgba(110,231,255,.15)}
+    button.good{border-color:rgba(77,226,141,.45)}
+    button.bad{border-color:rgba(255,107,107,.5)}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#0d1a2e;border:1px solid rgba(110,231,255,.18);
+         font-size:12px;margin-right:6px}
+    .panel h2{margin:.2rem 0 .5rem;font-size:16px;opacity:.9}
+    .muted{opacity:.8;font-size:12px}
+    .big{font-size:48px;font-weight:800;letter-spacing:1px;margin:10px 0}
+    .category{font-size:18px;margin:8px 0 0}
+    .team{display:flex;align-items:center;gap:8px}
+    .score{font-weight:800}
+    .hidden{display:none}
+    .log{max-height:160px;overflow:auto;background:#0a1122;border-radius:12px;padding:8px;border:1px solid rgba(110,231,255,.12)}
+    .install{float:right}
+  </style>
+</head>
+<body>
+  <div class="container grid">
+    <div class="card">
+      <h1>Loud Librarian <button id="btn-install" class="install">Install</button></h1>
+      <div id="view-lobby">
+        <p>Create or join a room to play live with friends. One person should be the <b>Host</b>.</p>
+        <div class="row">
+          <input id="playerName" placeholder="Your name">
+          <button id="createRoom" class="good">Create Room</button>
+          <input id="roomCode" placeholder="Room code">
+          <button id="joinRoom">Join</button>
+        </div>
+        <div class="muted" style="margin-top:8px">Share the 6‑letter room code (e.g., ABC123) or the page URL with <code>?room=ABC123</code>.</div>
+        <hr>
+        <div id="lobby" class="hidden">
+          <h2>Room: <span id="roomLabel"></span></h2>
+          <div class="row">
+            <button id="startGame" class="good">Start Round</button>
+            <button id="shuffleTeams">Shuffle Teams</button>
+            <button id="leaveRoom" class="bad">Leave</button>
+          </div>
+          <h3>Players</h3>
+          <ul id="players"></ul>
+          <h3>Teams</h3>
+          <div id="teams"></div>
+        </div>
+      </div>
+
+      <div id="view-game" class="hidden">
+        <div class="row">
+          <button id="backToLobby">Back</button>
+          <button id="nextRound" class="good">Next Round</button>
+          <button id="pauseTimer">Pause</button>
+          <span class="pill">Round <span id="roundNum">1</span></span>
+          <span class="pill">Time: <span id="timeLeft">60</span>s</span>
+        </div>
+        <div class="big" id="letter">A</div>
+        <div class="category">Category: <span id="category"></span></div>
+        <div class="muted">Rules: Say words that match the category and start with the big letter.</div>
+        <div class="row" style="margin-top:10px">
+          <div class="team"><span class="pill">Team A</span> <button data-team="A" class="scoreBtn good">+1</button> <span id="scoreA" class="score">0</span></div>
+          <div class="team"><span class="pill">Team B</span> <button data-team="B" class="scoreBtn good">+1</button> <span id="scoreB" class="score">0</span></div>
+          <button id="penaltyA" class="bad">Penalty A</button>
+          <button id="penaltyB" class="bad">Penalty B</button>
+        </div>
+        <h3>Round Log</h3>
+        <div id="log" class="log"></div>
+      </div>
+    </div>
+
+    <div class="card panel">
+      <h2>Game Settings</h2>
+      <div class="row">
+        <label>Round length <select id="roundSeconds">
+          <option value="45">45s</option>
+          <option value="60" selected>60s</option>
+          <option value="90">90s</option>
+        </select></label>
+        <label>Letters <select id="letterMode">
+          <option value="A-Z" selected>A–Z</option>
+          <option value="NoQXZ">A–Z (no Q, X, Z)</option>
+        </select></label>
+        <label>Language <select id="langSelect">
+          <option value="en" selected>English</option>
+        </select></label>
+      </div>
+      <h2>How to Play</h2>
+      <ol class="muted">
+        <li>Host creates a room and shares the code.</li>
+        <li>Teams take turns shouting words that match the category and start with the letter.</li>
+        <li>Host (or co-host) taps +1 for correct answers; use penalties when rules are broken.</li>
+        <li>After time ends, tap “Next Round.” Highest total wins!</li>
+      </ol>
+      <h2>Share Room</h2>
+      <div class="row">
+        <input id="shareLink" readonly style="flex:1" placeholder="Room link will appear here">
+        <button id="copyLink">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
